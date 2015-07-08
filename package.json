@@ -1,0 +1,21 @@
+{
+  "name": "jubeat_clone",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "devDependencies": {
+    "gulp": "~3.9.0",
+    "browserify": "~9.0.8",
+    "watchify": "~3.2.3",
+    "gulp-watchify": "~0.5.0",
+    "gulp-plumber": "~1.0.1",
+    "gulp-rename": "~1.2.2",
+    "coffee-script": "~1.9.3",
+    "coffeeify": "~1.1.0"
+  }
+}
