@@ -7,6 +7,7 @@ VideoPlayer = cc.Class.extend
     tag.src = 'https://www.youtube.com/iframe_api'
     firstScriptTag = document.getElementsByTagName('script')[0]
     firstScriptTag.parentNode.insertBefore tag, firstScriptTag
+    window.onYouTubeIframeAPIReady = @_onYouTubeIframeAPIReady.bind this
 
   play : -> @_player.playVideo()
 
@@ -16,20 +17,19 @@ VideoPlayer = cc.Class.extend
 
   getVolume : -> @_player.getVolume()
 
-  isReady : -> @_isReady
+  isReady : ->
+    @_isReady
 
-  onPlayerReady = ->
-    console.log "ready"
-    @_isReady = true
-    @_player.playVideo()
-
-  window.onYouTubeIframeAPIReady = ->
-    console.log "onYoutubeIframe readty"
+  _onYouTubeIframeAPIReady : ->
     @_player = new YT.Player 'player',
       videoId : 'HNYkOJ-T63k'
       width : 320
       height : 240
       events  :
-        'onReady': onPlayerReady
+        'onReady': @_onPlayerReady.bind this
+
+  _onPlayerReady : ->
+    @_isReady = true
+    @_player.playVideo()
 
 module.exports = VideoPlayer

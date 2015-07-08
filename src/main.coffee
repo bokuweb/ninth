@@ -17,11 +17,16 @@ window.onload = ->
         onEnter : ->
           @_super()
           size = cc.director.getWinSize()
-          label = cc.LabelTTF.create("aHello World", "Arial", 40)
-          label.setPosition(size.width / 2, size.height / 2)
-          @addChild(label, 1)
+          @_label = cc.LabelTTF.create("aHello World", "Arial", 40)
+          @_label.setPosition(size.width / 2, size.height / 2)
+          @addChild @_label
 
-          player = new VideoPlayer()
+          @_player = new VideoPlayer()
+          @scheduleUpdate()
+
+        update : ->
+          if @_player.isReady()
+            @_label.setString @_player.getCurrentTime()
 
       cc.director.runScene new MyScene()
 

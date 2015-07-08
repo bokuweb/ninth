@@ -18,13 +18,19 @@ window.onload = function() {
       var MyScene;
       MyScene = cc.Scene.extend({
         onEnter: function() {
-          var label, player, size;
+          var size;
           this._super();
           size = cc.director.getWinSize();
-          label = cc.LabelTTF.create("aHello World", "Arial", 40);
-          label.setPosition(size.width / 2, size.height / 2);
-          this.addChild(label, 1);
-          return player = new VideoPlayer();
+          this._label = cc.LabelTTF.create("aHello World", "Arial", 40);
+          this._label.setPosition(size.width / 2, size.height / 2);
+          this.addChild(this._label);
+          this._player = new VideoPlayer();
+          return this.scheduleUpdate();
+        },
+        update: function() {
+          if (this._player.isReady()) {
+            return this._label.setString(this._player.getCurrentTime());
+          }
         }
       });
       return cc.director.runScene(new MyScene());
@@ -36,7 +42,7 @@ window.onload = function() {
 
 
 },{"./videoPlayer":2}],2:[function(require,module,exports){
-var VideoPlayer, onPlayerReady;
+var VideoPlayer;
 
 VideoPlayer = cc.Class.extend({
   ctor: function(params) {
@@ -47,7 +53,8 @@ VideoPlayer = cc.Class.extend({
     tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
     firstScriptTag = document.getElementsByTagName('script')[0];
-    return firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    return window.onYouTubeIframeAPIReady = this._onYouTubeIframeAPIReady.bind(this);
   },
   play: function() {
     return this._player.playVideo();
@@ -63,21 +70,21 @@ VideoPlayer = cc.Class.extend({
   },
   isReady: function() {
     return this._isReady;
+  },
+  _onYouTubeIframeAPIReady: function() {
+    return this._player = new YT.Player('player', {
+      videoId: 'HNYkOJ-T63k',
+      width: 320,
+      height: 240,
+      events: {
+        'onReady': this._onPlayerReady.bind(this)
+      }
+    });
+  },
+  _onPlayerReady: function() {
+    this._isReady = true;
+    return this._player.playVideo();
   }
-}, onPlayerReady = function() {
-  console.log("ready");
-  this._isReady = true;
-  return this._player.playVideo();
-}, window.onYouTubeIframeAPIReady = function() {
-  console.log("onYoutubeIframe readty");
-  return this._player = new YT.Player('player', {
-    videoId: 'HNYkOJ-T63k',
-    width: 320,
-    height: 240,
-    events: {
-      'onReady': onPlayerReady
-    }
-  });
 });
 
 module.exports = VideoPlayer;
