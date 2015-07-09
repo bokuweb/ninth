@@ -1,7 +1,4 @@
-VideoPlayer = require './videoPlayer'
-
 window.onload = ->
-
   cc.game.onStart = ->
     cc.view.enableRetina off
     cc.view.adjustViewPort on
@@ -13,23 +10,8 @@ window.onload = ->
     cc.director.setContentScaleFactor 2
 
     cc.LoaderScene.preload [], ->
-      MyScene = cc.Scene.extend
-        onEnter : ->
-          @_super()
-          size = cc.director.getWinSize()
-          @_label = cc.LabelTTF.create("aHello World", "Arial", 40)
-          @_label.setPosition(size.width / 2, size.height / 2)
-          @addChild @_label
-
-          @_player = new VideoPlayer()
-          @scheduleUpdate()
-
-        update : ->
-          if @_player.isReady()
-            @_label.setString @_player.getCurrentTime()
-
-      cc.director.runScene new MyScene()
-
+      GameScene = require './gameScene'
+      cc.director.runScene new GameScene()
     , this
 
   cc.game.run "gameCanvas"
