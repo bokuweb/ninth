@@ -39,9 +39,10 @@ GameScene = cc.Scene.extend({
     this._label.setPosition(size.width / 2, size.height / 2);
     this.addChild(this._label);
     this._player = new VideoPlayer();
+    this._timer = new Timer();
     this._layer = new NotesLayer({
       noteImage: './img/box.png'
-    }, this._player, [
+    }, this._timer, [
       {
         timing: 1,
         key: 0
@@ -71,14 +72,19 @@ GameScene = cc.Scene.extend({
         key: 8
       }
     ]);
+    console.log("hoge");
     this.addChild(this._layer);
-    this._layer.start();
-    this._player.start();
     return this.scheduleUpdate();
   },
   update: function() {
     if (this._player.isReady()) {
-      return this._label.setString(this._player.getCurrentTime());
+      this._layer.start();
+      if (this._player.getCurrentTime() > 0) {
+        if (this._timer.getCurrentTime() === 0) {
+          this._timer.start();
+        }
+      }
+      return this._label.setString(this._timer.getCurrentTime());
     }
   }
 });
@@ -297,6 +303,7 @@ VideoPlayer = cc.Class.extend({
     return this._player.getVolume();
   },
   isReady: function() {
+    console.log(this._isReady);
     return this._isReady;
   },
   _onYouTubeIframeAPIReady: function() {
@@ -310,6 +317,7 @@ VideoPlayer = cc.Class.extend({
     });
   },
   _onPlayerReady: function() {
+    console.log("ready");
     this._isReady = true;
     return this._player.playVideo();
   }

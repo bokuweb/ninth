@@ -18,6 +18,7 @@ VideoPlayer = cc.Class.extend
   getVolume : -> @_player.getVolume()
 
   isReady : ->
+    console.log @_isReady
     @_isReady
 
   _onYouTubeIframeAPIReady : ->
@@ -29,6 +30,7 @@ VideoPlayer = cc.Class.extend
         'onReady': @_onPlayerReady.bind this
 
   _onPlayerReady : ->
+    console.log "ready"
     @_isReady = true
     @_player.playVideo()
 

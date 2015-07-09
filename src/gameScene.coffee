@@ -9,12 +9,12 @@ GameScene = cc.Scene.extend
 
     @_super()
     size = cc.director.getWinSize()
-    @_label = cc.LabelTTF.create("Hello World", "Arial", 20)
+    @_label = cc.LabelTTF.create "Hello World", "Arial", 20
     @_label.setPosition size.width / 2, size.height / 2
     @addChild @_label
     @_player = new VideoPlayer()
-    #@_player = new Timer()
-    @_layer = new NotesLayer {noteImage : './img/box.png'}, @_player, [
+    @_timer = new Timer()
+    @_layer = new NotesLayer {noteImage : './img/box.png'}, @_timer, [
       {timing : 1, key : 0}
       {timing : 2, key : 1}
       {timing : 3, key : 2}
@@ -25,16 +25,21 @@ GameScene = cc.Scene.extend
       {timing : 8, key : 7}
       {timing : 9, key : 8}
     ]
-
+    console.log "hoge"
     @addChild @_layer
-    @_layer.start()
-    @_player.start()
+
+    #@_player.start()
     @scheduleUpdate()
 
   update : ->
-    #@_label.setString @_player.getCurrentTime()
     if @_player.isReady()
-      @_label.setString @_player.getCurrentTime()
+      @_layer.start()
+
+      if @_player.getCurrentTime() > 0
+        if @_timer.getCurrentTime() is 0
+          @_timer.start()
+
+      @_label.setString @_timer.getCurrentTime()
 
 module.exports = GameScene
 
