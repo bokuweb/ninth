@@ -12,8 +12,8 @@ GameScene = cc.Scene.extend
     @_label = cc.LabelTTF.create("Hello World", "Arial", 20)
     @_label.setPosition size.width / 2, size.height / 2
     @addChild @_label
-    #@_player = new VideoPlayer()
-    @_player = new Timer()
+    @_player = new VideoPlayer()
+    #@_player = new Timer()
     @_layer = new NotesLayer {noteImage : './img/box.png'}, @_player, [
       {timing : 1, key : 0}
       {timing : 2, key : 1}
@@ -32,9 +32,9 @@ GameScene = cc.Scene.extend
     @scheduleUpdate()
 
   update : ->
-    @_label.setString @_player.getCurrentTime()
-    #if @_player.isReady()
-    #  @_label.setString @_player.getCurrentTime()
+    #@_label.setString @_player.getCurrentTime()
+    if @_player.isReady()
+      @_label.setString @_player.getCurrentTime()
 
 module.exports = GameScene
 

@@ -38,7 +38,7 @@ GameScene = cc.Scene.extend({
     this._label = cc.LabelTTF.create("Hello World", "Arial", 20);
     this._label.setPosition(size.width / 2, size.height / 2);
     this.addChild(this._label);
-    this._player = new Timer();
+    this._player = new VideoPlayer();
     this._layer = new NotesLayer({
       noteImage: './img/box.png'
     }, this._player, [
@@ -77,7 +77,9 @@ GameScene = cc.Scene.extend({
     return this.scheduleUpdate();
   },
   update: function() {
-    return this._label.setString(this._player.getCurrentTime());
+    if (this._player.isReady()) {
+      return this._label.setString(this._player.getCurrentTime());
+    }
   }
 });
 
