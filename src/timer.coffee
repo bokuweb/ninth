@@ -5,9 +5,9 @@ Timer = cc.Class.extend
 
   start : -> @_startTime  = new Date()
 
-  set : (time_msec)->
+  set : (time_sec)->
     @_startTime  = new Date()
-    @_pauseTime = time_msec
+    @_pauseTime = time_sec * 1000
 
   getCurrentTime : ->
     if @_startTime

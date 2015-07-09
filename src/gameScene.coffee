@@ -1,6 +1,7 @@
 GameScene = cc.Scene.extend
   ctor : ->
     @_super()
+    @_old = 0
 
   onEnter : ->
     VideoPlayer = require './videoPlayer'
@@ -33,11 +34,15 @@ GameScene = cc.Scene.extend
 
   update : ->
     if @_player.isReady()
-      @_layer.start()
-
       if @_player.getCurrentTime() > 0
         if @_timer.getCurrentTime() is 0
           @_timer.start()
+        # syncronous timer
+        if @_player.getCurrentTime() isnt @_old
+          @_timer.set @_player.getCurrentTime()
+          @_old = @_player.getCurrentTime()
+      else
+        @_layer.start()
 
       @_label.setString @_timer.getCurrentTime()
 

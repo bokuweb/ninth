@@ -26,7 +26,8 @@ var GameScene;
 
 GameScene = cc.Scene.extend({
   ctor: function() {
-    return this._super();
+    this._super();
+    return this._old = 0;
   },
   onEnter: function() {
     var NotesLayer, Timer, VideoPlayer, size;
@@ -78,11 +79,16 @@ GameScene = cc.Scene.extend({
   },
   update: function() {
     if (this._player.isReady()) {
-      this._layer.start();
       if (this._player.getCurrentTime() > 0) {
         if (this._timer.getCurrentTime() === 0) {
           this._timer.start();
         }
+        if (this._player.getCurrentTime() !== this._old) {
+          this._timer.set(this._player.getCurrentTime());
+          this._old = this._player.getCurrentTime();
+        }
+      } else {
+        this._layer.start();
       }
       return this._label.setString(this._timer.getCurrentTime());
     }
@@ -178,8 +184,8 @@ NotesLayer = cc.Layer.extend({
         timing: v.timing,
         inAnimationTime: 0.15
       }, this._player);
-      note.x = ((v.key % 3) + 1) * 105;
-      note.y = (~~(v.key / 3) + 1) * 105;
+      note.x = (v.key % 3) * 105 + 58;
+      note.y = ~~(v.key / 3) * 105 + 58;
       note.timing = v.timing;
       note.setScale(0, 0);
       this._notes.push(note);
@@ -217,9 +223,9 @@ Timer = cc.Class.extend({
   start: function() {
     return this._startTime = new Date();
   },
-  set: function(time_msec) {
+  set: function(time_sec) {
     this._startTime = new Date();
-    return this._pauseTime = time_msec;
+    return this._pauseTime = time_sec * 1000;
   },
   getCurrentTime: function() {
     if (this._startTime) {

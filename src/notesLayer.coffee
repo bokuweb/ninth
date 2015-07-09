@@ -12,8 +12,8 @@ NotesLayer = cc.Layer.extend
           timing          : v.timing
           inAnimationTime : 0.15
         }, @_player
-      note.x = ((v.key % 3) + 1) * 105
-      note.y = (~~(v.key / 3) + 1) * 105
+      note.x = (v.key % 3) * 105 + 58
+      note.y = ~~(v.key / 3) * 105 + 58
       note.timing = v.timing
       note.setScale 0, 0
       @_notes.push note
