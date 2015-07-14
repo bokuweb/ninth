@@ -30,8 +30,8 @@ VideoPlayer = cc.Class.extend
         'onReady': @_onPlayerReady.bind this
 
   _onPlayerReady : ->
-    console.log "ready"
+    #console.log "ready"
     @_isReady = true
-    @_player.playVideo()
+    #@_player.playVideo()
 
 module.exports = VideoPlayer

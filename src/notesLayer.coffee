@@ -1,5 +1,5 @@
 NotesLayer = cc.Layer.extend
-  ctor : (@_skin, @_player, @_score) ->
+  ctor : (@_skin, @_timer, @_score, @_judge) ->
     Note = require './note'
     @_super()
     @_notes = []
@@ -11,7 +11,8 @@ NotesLayer = cc.Layer.extend
       note = new Note @_batchNode.getTexture(), {
           timing          : v.timing
           inAnimationTime : 0.15
-        }, @_player
+          removeTiming    : 0.2
+        }, @_timer, @_judge
       note.x = (v.key % 3) * 105 + 58
       note.y = ~~(v.key / 3) * 105 + 58
       note.timing = v.timing
@@ -25,7 +26,7 @@ NotesLayer = cc.Layer.extend
   update : ->
     note = @_notes[@_index]
     return unless note?
-    if @_player.getCurrentTime() >= note.timing - 0.2
+    if @_timer.getCurrentTime() >= note.timing - 0.2
       @_batchNode.addChild note, 99
       note.start()
       @_index++

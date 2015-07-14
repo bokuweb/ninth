@@ -26,21 +26,20 @@ var GameScene;
 
 GameScene = cc.Scene.extend({
   ctor: function() {
-    this._super();
-    return this._old = 0;
+    return this._super();
   },
   onEnter: function() {
-    var NotesLayer, Timer, VideoPlayer, size;
+    var NotesLayer, VideoPlayer, VideoTimer, size;
     VideoPlayer = require('./videoPlayer');
-    Timer = require('./timer');
+    VideoTimer = require('./videotimer');
     NotesLayer = require('./notesLayer');
     this._super();
     size = cc.director.getWinSize();
-    this._label = cc.LabelTTF.create("Hello World", "Arial", 20);
+    this._label = cc.LabelTTF.create("Hello Worlda", "Arial", 20);
     this._label.setPosition(size.width / 2, size.height / 2);
-    this.addChild(this._label);
     this._player = new VideoPlayer();
-    this._timer = new Timer();
+    this._timer = new VideoTimer(this._player);
+    this.addChild(this._timer);
     this._layer = new NotesLayer({
       noteImage: './img/box.png'
     }, this._timer, [
@@ -73,24 +72,16 @@ GameScene = cc.Scene.extend({
         key: 8
       }
     ]);
-    console.log("hoge");
+    this.addChild(this._label);
     this.addChild(this._layer);
     return this.scheduleUpdate();
   },
   update: function() {
+    return this._startNotesLayerIfReady();
+  },
+  _startNotesLayerIfReady: function() {
     if (this._player.isReady()) {
-      if (this._player.getCurrentTime() > 0) {
-        if (this._timer.getCurrentTime() === 0) {
-          this._timer.start();
-        }
-        if (this._player.getCurrentTime() !== this._old) {
-          this._timer.set(this._player.getCurrentTime());
-          this._old = this._player.getCurrentTime();
-        }
-      } else {
-        this._layer.start();
-      }
-      return this._label.setString(this._timer.getCurrentTime());
+      return this._layer.start();
     }
   }
 });
@@ -99,15 +90,15 @@ module.exports = GameScene;
 
 
 
-},{"./notesLayer":4,"./timer":5,"./videoPlayer":7}],3:[function(require,module,exports){
+},{"./notesLayer":4,"./videoPlayer":7,"./videotimer":8}],3:[function(require,module,exports){
 var Note, TouchSprite;
 
 TouchSprite = require('./touchSprite');
 
 Note = TouchSprite.extend({
-  ctor: function(texture, _params, _player, _judge) {
+  ctor: function(texture, _params, _timer, _judge) {
     this._params = _params;
-    this._player = _player;
+    this._timer = _timer;
     this._judge = _judge;
     this._super(texture);
     return this.setScale(0, 0);
@@ -116,24 +107,34 @@ Note = TouchSprite.extend({
     return this.scheduleUpdate();
   },
   update: function() {
-    var currentTime, scale;
-    currentTime = this._player.getCurrentTime();
+    var cb, currentTime, scale, seq;
+    currentTime = this._timer.getCurrentTime();
     if (currentTime >= this._params.timing) {
       this.setScale(1, 1);
-      return this.setRotation(0);
+      this.setRotation(0);
     } else {
       if (this._params.timing - currentTime < this._params.inAnimationTime) {
         scale = 1 - (this._params.timing - currentTime);
         this.setScale(scale, scale);
-        return this.setRotation(scale * 720);
+        this.setRotation(scale * 720);
       }
+    }
+    if (currentTime >= this._params.timing + this._params.removeTiming) {
+      this.unscheduleUpdate();
+      cb = function() {
+        return this.removeFromParent(true);
+      };
+      seq = cc.sequence(cc.fadeOut(0.2), cc.CallFunc.create(cb, this));
+      return this.runAction(seq);
     }
   },
   onTouchBegan: function(touch, event) {
-    var cb, seq, spawn;
+    var cb, currentTime, seq, spawn;
     if (!this._super(touch, event)) {
       return;
     }
+    currentTime = this._timer.getCurrentTime();
+    this._judge.judge(this._params.timing - currentTime);
     this.unscheduleUpdate();
     spawn = cc.spawn(cc.fadeOut(0.2, cc.scaleBy(0.2, 1.5, 1.5)));
     seq = cc.sequence(spawn, cc.CallFunc.create(cb, this));
@@ -142,20 +143,6 @@ Note = TouchSprite.extend({
       return this.removeFromParent(true);
     };
   }
-
-  /*
-  _judge : ->
-    currentTime = @_timer.get()
-    diffTime = currentTime - @_params.timing
-    great = @_params.threshold.great
-    good = @_params.threshold.good
-    if -great < diffTime < great
-      @_trigger 'judge', 'great'
-    else if -good < diffTime < good
-      @_trigger 'judge', 'good'
-    else
-      @_trigger 'judge', 'bad'
-   */
 });
 
 module.exports = Note;
@@ -166,11 +153,12 @@ module.exports = Note;
 var NotesLayer;
 
 NotesLayer = cc.Layer.extend({
-  ctor: function(_skin, _player, _score) {
+  ctor: function(_skin, _timer, _score, _judge) {
     var Note, i, len, note, ref, v;
     this._skin = _skin;
-    this._player = _player;
+    this._timer = _timer;
     this._score = _score;
+    this._judge = _judge;
     Note = require('./note');
     this._super();
     this._notes = [];
@@ -182,8 +170,9 @@ NotesLayer = cc.Layer.extend({
       v = ref[i];
       note = new Note(this._batchNode.getTexture(), {
         timing: v.timing,
-        inAnimationTime: 0.15
-      }, this._player);
+        inAnimationTime: 0.15,
+        removeTiming: 0.2
+      }, this._timer, this._judge);
       note.x = (v.key % 3) * 105 + 58;
       note.y = ~~(v.key / 3) * 105 + 58;
       note.timing = v.timing;
@@ -200,7 +189,7 @@ NotesLayer = cc.Layer.extend({
     if (note == null) {
       return;
     }
-    if (this._player.getCurrentTime() >= note.timing - 0.2) {
+    if (this._timer.getCurrentTime() >= note.timing - 0.2) {
       this._batchNode.addChild(note, 99);
       note.start();
       return this._index++;
@@ -323,9 +312,7 @@ VideoPlayer = cc.Class.extend({
     });
   },
   _onPlayerReady: function() {
-    console.log("ready");
-    this._isReady = true;
-    return this._player.playVideo();
+    return this._isReady = true;
   }
 });
 
@@ -333,4 +320,41 @@ module.exports = VideoPlayer;
 
 
 
-},{}]},{},[1]);
+},{}],8:[function(require,module,exports){
+var VideoTimer;
+
+VideoTimer = cc.Layer.extend({
+  ctor: function(_player) {
+    var Timer;
+    this._player = _player;
+    this._super();
+    Timer = require('./timer');
+    this._timer = new Timer();
+    this._oldTime = 0;
+    return this.scheduleUpdate();
+  },
+  update: function() {
+    if (this._player.isReady()) {
+      if (this._player.getCurrentTime() > 0) {
+        if (this._timer.getCurrentTime() === 0) {
+          console.log("timerstart");
+          this._timer.start();
+        }
+        if (this._player.getCurrentTime() !== this._oldTime) {
+          this._timer.set(this._player.getCurrentTime());
+          return this._oldTime = this._player.getCurrentTime();
+        }
+      }
+    }
+  },
+  getCurrentTime: function() {
+    console.log(this._timer);
+    return this._timer.getCurrentTime();
+  }
+});
+
+module.exports = VideoTimer;
+
+
+
+},{"./timer":5}]},{},[1]);

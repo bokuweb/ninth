@@ -1,20 +1,19 @@
 GameScene = cc.Scene.extend
   ctor : ->
     @_super()
-    @_old = 0
 
   onEnter : ->
     VideoPlayer = require './videoPlayer'
-    Timer       = require './timer'
+    VideoTimer  = require './videotimer'
     NotesLayer  = require './notesLayer'
 
     @_super()
     size = cc.director.getWinSize()
-    @_label = cc.LabelTTF.create "Hello World", "Arial", 20
+    @_label = cc.LabelTTF.create "Hello Worlda", "Arial", 20
     @_label.setPosition size.width / 2, size.height / 2
-    @addChild @_label
     @_player = new VideoPlayer()
-    @_timer = new Timer()
+    @_timer = new VideoTimer @_player
+    @addChild @_timer
     @_layer = new NotesLayer {noteImage : './img/box.png'}, @_timer, [
       {timing : 1, key : 0}
       {timing : 2, key : 1}
@@ -26,25 +25,15 @@ GameScene = cc.Scene.extend
       {timing : 8, key : 7}
       {timing : 9, key : 8}
     ]
-    console.log "hoge"
+    @addChild @_label
     @addChild @_layer
-
-    #@_player.start()
     @scheduleUpdate()
 
-  update : ->
-    if @_player.isReady()
-      if @_player.getCurrentTime() > 0
-        if @_timer.getCurrentTime() is 0
-          @_timer.start()
-        # syncronous timer
-        if @_player.getCurrentTime() isnt @_old
-          @_timer.set @_player.getCurrentTime()
-          @_old = @_player.getCurrentTime()
-      else
-        @_layer.start()
+  update : -> @_startNotesLayerIfReady()
 
-      @_label.setString @_timer.getCurrentTime()
+  _startNotesLayerIfReady : ->
+    if @_player.isReady() # and @_player.getCurrentTime() is 0
+      @_layer.start()
 
 module.exports = GameScene
 
