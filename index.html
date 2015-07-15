@@ -12,17 +12,26 @@
             top:0;
             left:0;
         }
+
         #player{
             position:absolute;
             z-index:1000;
-            width:100%;
+            width:560px;
         }
+
+        @media (max-width: 768px) {
+            #player{
+                position:absolute;
+                z-index:1000;
+                width:100%;
+            }
+         }
     </style>
     <script type="text/javascript" src="lib/cocos2d-js-v3.6.js" charset="UTF-8"></script>
 </head>
 <body>
     <div id="player"></div>
-    <canvas id="gameCanvas" width="800" height="450"></canvas>
+    <canvas id="gameCanvas" width="560" height="780"></canvas>
     <script type="text/javascript" src="dist/main.js" charset="UTF-8"></script>
 </body>
 </html>

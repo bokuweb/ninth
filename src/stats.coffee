@@ -1,9 +1,13 @@
 StatsLayer = cc.Layer.extend
-  ctor: (@_skin) ->
+  ctor: (skin) ->
     @_super()
-    Numerallabel = require './numeralLabel'
-    @_scoreLabel = new NumeralLabel @_skin.score
-    @_comboLabel =  new NumeralLabel @_skin.comboNum
+    NumeralLabel = require './numeralFont'
+    @_scoreLabel = new NumeralLabel skin.score
+    @_comboLabel =  new NumeralLabel skin.comboNum
+    @_scoreLabel.x = skin.score.x
+    @_scoreLabel.y = skin.score.y
+    @_comboLabel.x = skin.comboNum.x
+    @_comboLabel.y = skin.comboNum.y
     @addChild @_scoreLabel
     @addChild @_comboLabel
 
@@ -22,17 +26,15 @@ StatsLayer = cc.Layer.extend
     @_greatIncVal = maxScore.great / @_noteNum
     @_goodIncVal = maxScore.good / @_noteNum
     @_comboBonusFactor = maxScore.combo / (10 * (@_noteNum - 1) - 55)
+    @_incValonUpdate = maxScore.good / @_noteNum / 10
 
     @_scoreLabel.init @_getDigits(maxScore.pgreat + maxScore.combo), 0
-    @_scoreLabel.x = cc.screenSize.width / 2 + @_skin.score.x
-    @_scoreLabel.y = cc.screenSize.height - @_skin.score.y
-
     @_comboLabel.init 4, 0
-    @_comboLabel.x = cc.screenSize.width / 2 + @_skin.comboNum.x
-    @_comboLabel.y = cc.screenSize.height - @_skin.comboNum.y
+
+    @scheduleUpdate()
 
   get : ->
-    score  : @_dispScore
+    score  : ~~(@_score.toFixed())
     combo  : @_maxCombo
     pgreat : @_pgreatNum
     great  : @_greatNum
@@ -46,26 +48,26 @@ StatsLayer = cc.Layer.extend
         @_score += @_pgreatIncVal
         @_combo++
         @_pgreatNum++
-        @_pgreatLabel.reflect @_pgreatNum
+        #@_pgreatLabel.reflect @_pgreatNum
 
       when "great"
         @_score += @_greatIncVal
         @_combo++
         @_greatNum++
-        @_greatLabel.reflect @_greatNum
+        #@_greatLabel.reflect @_greatNum
 
       when "good"
         @_score += @_goodIncVal
         @_combo++
         @_goodNum++
-        @_goodLabel.reflect @_goodNum
+        #@_goodLabel.reflect @_goodNum
 
       when "bad"
         @_score += @_comboBonusFactor * @_comboPoint
         @_combo = 0
         @_comboPoint = 0
         @_badNum++
-        @_badLabel.reflect @_badNum
+        #@_badLabel.reflect @_badNum
       else
 
     # full combo
@@ -80,11 +82,16 @@ StatsLayer = cc.Layer.extend
 
     if @_combo > @_maxCombo
       @_maxCombo = @_combo
-    @_comboLabel.reflect @_combo
+    @_comboLabel.reflect @_maxCombo
 
-    @_dispScore = ~~(@_score.toFixed())
-    @_scoreLabel.reflect @_dispScore
+    #@_dispScore = ~~(@_score.toFixed())
+    #@_scoreLabel.reflect @_dispScore
 
+  update : -> 
+    if @_dispScore < ~~(@_score.toFixed())
+      @_dispScore += @_incValonUpdate
+      @_dispScore = if @_dispScore > ~~(@_score.toFixed()) then ~~(@_score.toFixed()) else @_dispScore
+      @_scoreLabel.reflect @_dispScore
 
   _getDigits : (num)-> Math.log(num) / Math.log(10) + 1 | 0
 

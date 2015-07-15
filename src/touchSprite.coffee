@@ -5,10 +5,10 @@ TouchSprite = cc.Sprite.extend
     eventListener = cc.EventListener.create
       event: cc.EventListener.TOUCH_ONE_BY_ONE
       swallowTouches: true
-      onTouchBegan: @onTouchBegan.bind this
+      onTouchBegan: @_onTouchBegan.bind this
     cc.eventManager.addListener eventListener, this
 
-  onTouchBegan : (touch, event) ->
+  _onTouchBegan : (touch, event) ->
     target = event.getCurrentTarget()
     locationInNode = target.convertToNodeSpace touch.getLocation()
     s = target.getContentSize()

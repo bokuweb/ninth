@@ -5,6 +5,7 @@ TouchSpriteTest = require './test-touchSprite'
 NoteTest        = require './test-note'
 NotesLayerTest  = require './test-notesLayer'
 NumaralFontTest = require './test-numeralFont'
+StatsTest       = require './test-stats'
 
 window.onload = ->
   cc.game.onStart = ->
@@ -21,6 +22,7 @@ window.onload = ->
     noteTest        = new NoteTest()
     notesLayerTest  = new NotesLayerTest()
     numeralFontTest = new NumaralFontTest()
+    statsTest       = new StatsTest()
 
     timerTest.start()
     #videoTimerTest.start()
@@ -29,6 +31,7 @@ window.onload = ->
     noteTest.start()
     notesLayerTest.start()
     numeralFontTest.start()
+    statsTest.start()
     
     if window.mochaPhantomJS
       mochaPhantomJS.run()

@@ -21,7 +21,41 @@ window.onload = function() {
 
 
 
-},{"./gameScene":2}],2:[function(require,module,exports){
+},{"./gameScene":3}],2:[function(require,module,exports){
+module.exports = {
+    on: function (ev, handler) {
+        var events = this._events
+
+        ;(events[ev] || (events[ev] = [])).push(handler)
+    },
+    removeListener: function (ev, handler) {
+        var array = this._events[ev]
+
+        array && array.splice(array.indexOf(handler), 1)
+    },
+    emit: function (ev) {
+        var args = [].slice.call(arguments, 1),
+            array = this._events[ev] || []
+
+        for (var i = 0, len = array.length; i < len; i++) {
+            array[i].apply(this, args)
+        }
+    },
+    once: function (ev, handler) {
+        this.on(ev, function () {
+            handler.apply(this, arguments)
+            this.removeListener(ev, handler)
+        })
+    },
+    constructor: function constructor() {
+        this._events = {}
+        return this
+    }
+}
+
+module.exports.constructor.prototype = module.exports
+
+},{}],3:[function(require,module,exports){
 var GameScene;
 
 GameScene = cc.Scene.extend({
@@ -29,10 +63,13 @@ GameScene = cc.Scene.extend({
     return this._super();
   },
   onEnter: function() {
-    var NotesLayer, VideoPlayer, VideoTimer, size;
+    var Judge, NotesLayer, Stats, Timer, VideoPlayer, VideoTimer, judge, score, size;
     VideoPlayer = require('./videoPlayer');
     VideoTimer = require('./videotimer');
     NotesLayer = require('./notesLayer');
+    Judge = require('./judge');
+    Stats = require('./stats');
+    Timer = require('./timer');
     this._super();
     size = cc.director.getWinSize();
     this._label = cc.LabelTTF.create("Hello Worlda", "Arial", 20);
@@ -40,9 +77,34 @@ GameScene = cc.Scene.extend({
     this._player = new VideoPlayer();
     this._timer = new VideoTimer(this._player);
     this.addChild(this._timer);
-    this._layer = new NotesLayer({
-      noteImage: './img/box.png'
-    }, this._timer, [
+    judge = new Judge({
+      pgreat: 0.075,
+      great: 0.15,
+      good: 0.25
+    });
+    judge.addEventListener('pgreat', (function(_this) {
+      return function() {
+        console.log("pgreat");
+        return _this._stats.reflect('pgreat');
+      };
+    })(this));
+    judge.addEventListener('great', (function(_this) {
+      return function() {
+        console.log("great");
+        return _this._stats.reflect('great');
+      };
+    })(this));
+    judge.addEventListener('good', (function(_this) {
+      return function() {
+        return _this._stats.reflect('good');
+      };
+    })(this));
+    judge.addEventListener('bad', (function(_this) {
+      return function() {
+        return _this._stats.reflect('bad');
+      };
+    })(this));
+    score = [
       {
         timing: 1,
         key: 0
@@ -71,37 +133,101 @@ GameScene = cc.Scene.extend({
         timing: 9,
         key: 8
       }
-    ]);
+    ];
+    this._layer = new NotesLayer({
+      noteImage: './img/box.png'
+    }, this._timer, score, judge);
+    this._stats = new Stats({
+      score: {
+        x: 100,
+        y: 100,
+        src: './img/number.png',
+        width: 26.2,
+        height: 16,
+        scale: 0.8,
+        margin: 0
+      },
+      comboNum: {
+        x: 100,
+        y: 200,
+        src: './img/number.png',
+        width: 26.2,
+        height: 16,
+        scale: 0.8,
+        margin: 0
+      }
+    });
+    this._stats.init(score.length, {
+      pgreat: 150000,
+      great: 100000,
+      good: 20000,
+      combo: 50000
+    });
     this.addChild(this._label);
     this.addChild(this._layer);
-    return this.scheduleUpdate();
+    this.addChild(this._stats);
+    this.scheduleUpdate();
+    return this._layer.start();
   },
-  update: function() {
-    return this._startNotesLayerIfReady();
-  },
-  _startNotesLayerIfReady: function() {
-    if (this._player.isReady()) {
-      return this._layer.start();
-    }
-  }
+  update: function() {}
 });
 
 module.exports = GameScene;
 
 
 
-},{"./notesLayer":4,"./videoPlayer":7,"./videotimer":8}],3:[function(require,module,exports){
-var Note, TouchSprite;
+},{"./judge":4,"./notesLayer":6,"./stats":8,"./timer":9,"./videoPlayer":11,"./videotimer":12}],4:[function(require,module,exports){
+var Judge;
 
-TouchSprite = require('./touchSprite');
+Judge = cc.Class.extend({
+  ctor: function(_thresholds) {
+    var EventEmitter;
+    this._thresholds = _thresholds;
+    EventEmitter = require("eventemitter-light");
+    return this._ee = Object.create(EventEmitter).constructor();
+  },
+  addEventListener: function(event, listener) {
+    return this._ee.on(event, listener);
+  },
+  judge: function(diffTime) {
+    var good, great, pgreat;
+    pgreat = this._thresholds.pgreat;
+    great = this._thresholds.great;
+    good = this._thresholds.good;
+    if ((-pgreat < diffTime && diffTime < pgreat)) {
+      return this._ee.emit('pgreat');
+    } else if ((-great < diffTime && diffTime < great)) {
+      return this._ee.emit('great');
+    } else if ((-good < diffTime && diffTime < good)) {
+      return this._ee.emit('good');
+    } else {
+      return this._ee.emit('bad');
+    }
+  }
+});
 
-Note = TouchSprite.extend({
+module.exports = Judge;
+
+
+
+},{"eventemitter-light":2}],5:[function(require,module,exports){
+var Note;
+
+Note = require('./touchSprite').extend({
   ctor: function(texture, _params, _timer, _judge) {
+    var eventListener;
     this._params = _params;
     this._timer = _timer;
     this._judge = _judge;
     this._super(texture);
-    return this.setScale(0, 0);
+    this.setScale(0, 0);
+    if ('keyboard' in cc.sys.capabilities) {
+      eventListener = cc.EventListener.create({
+        event: cc.EventListener.KEYBOARD,
+        onKeyPressed: this._onKeyPressed.bind(this)
+      });
+      return cc.eventManager.addListener(eventListener, this);
+    }
   },
   start: function() {
     return this.scheduleUpdate();
@@ -120,6 +246,7 @@ Note = TouchSprite.extend({
       }
     }
     if (currentTime >= this._params.timing + this._params.removeTiming) {
+      this._judge.judge(this._params.timing - currentTime);
       this.unscheduleUpdate();
       cb = function() {
         return this.removeFromParent(true);
@@ -128,11 +255,22 @@ Note = TouchSprite.extend({
       return this.runAction(seq);
     }
   },
-  onTouchBegan: function(touch, event) {
-    var cb, currentTime, seq, spawn;
+  _onTouchBegan: function(touch, event) {
     if (!this._super(touch, event)) {
       return;
     }
+    return this._onHit();
+  },
+  _onKeyPressed: function(key, evnt) {
+    var activeKeys;
+    activeKeys = [90, 88, 67, 65, 83, 68, 81, 87, 69];
+    console.log("@_params.key = " + this._params.key + ", key = " + key);
+    if (activeKeys[this._params.key] === key) {
+      return this._onHit();
+    }
+  },
+  _onHit: function() {
+    var cb, currentTime, seq, spawn;
     currentTime = this._timer.getCurrentTime();
     this._judge.judge(this._params.timing - currentTime);
     this.unscheduleUpdate();
@@ -149,36 +287,36 @@ module.exports = Note;
 
 
 
-},{"./touchSprite":6}],4:[function(require,module,exports){
+},{"./touchSprite":10}],6:[function(require,module,exports){
 var NotesLayer;
 
 NotesLayer = cc.Layer.extend({
-  ctor: function(_skin, _timer, _score, _judge) {
-    var Note, i, len, note, ref, v;
+  ctor: function(_skin, _timer, score, judge) {
+    var Note, i, len, note, results, v;
     this._skin = _skin;
     this._timer = _timer;
-    this._score = _score;
-    this._judge = _judge;
     Note = require('./note');
     this._super();
     this._notes = [];
     this._index = 0;
     this._batchNode = new cc.SpriteBatchNode(this._skin.noteImage);
     this.addChild(this._batchNode, 100);
-    ref = this._score;
-    for (i = 0, len = ref.length; i < len; i++) {
-      v = ref[i];
+    results = [];
+    for (i = 0, len = score.length; i < len; i++) {
+      v = score[i];
       note = new Note(this._batchNode.getTexture(), {
+        key: v.key,
         timing: v.timing,
-        inAnimationTime: 0.15,
-        removeTiming: 0.2
-      }, this._timer, this._judge);
+        inAnimationTime: 0.2,
+        removeTiming: 0.35
+      }, this._timer, judge);
       note.x = (v.key % 3) * 105 + 58;
       note.y = ~~(v.key / 3) * 105 + 58;
       note.timing = v.timing;
       note.setScale(0, 0);
-      this._notes.push(note);
+      results.push(this._notes.push(note));
     }
+    return results;
   },
   start: function() {
     return this.scheduleUpdate();
@@ -201,7 +339,161 @@ module.exports = NotesLayer;
 
 
 
-},{"./note":3}],5:[function(require,module,exports){
+},{"./note":5}],7:[function(require,module,exports){
+var NumeralLabel;
+
+NumeralLabel = cc.Layer.extend({
+  ctor: function(_skin) {
+    this._skin = _skin;
+    this._super();
+    return this._sprites = [];
+  },
+  init: function(_digits, num) {
+    var i, j, ref, scaledWidth;
+    this._digits = _digits;
+    if (num == null) {
+      num = 0;
+    }
+    scaledWidth = this._skin.width * this._skin.scale;
+    this._batchNode = new cc.SpriteBatchNode(this._skin.src);
+    this.addChild(this._batchNode);
+    this._frames = (function() {
+      var j, results;
+      results = [];
+      for (i = j = 0; j < 10; i = ++j) {
+        results.push(new cc.SpriteFrame(this._batchNode.texture, cc.rect(this._skin.width * i, 0, this._skin.width, this._skin.height)));
+      }
+      return results;
+    }).call(this);
+    for (i = j = 0, ref = this._digits; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+      this._sprites[i] = new cc.Sprite();
+      this._sprites[i].setSpriteFrame(this._frames[0]);
+      this._sprites[i].x = i * (-scaledWidth - this._skin.margin) + (scaledWidth * this._digits / 2);
+      this._sprites[i].scale = this._skin.scale;
+      this._batchNode.addChild(this._sprites[i]);
+    }
+    return this.reflect(num);
+  },
+  reflect: function(num) {
+    var i, j, ref, results;
+    results = [];
+    for (i = j = 0, ref = this._digits; 0 <= ref ? j < ref : j > ref; i = 0 <= ref ? ++j : --j) {
+      this._sprites[i].setSpriteFrame(this._frames[~~(num % 10)]);
+      results.push(num /= 10);
+    }
+    return results;
+  }
+});
+
+module.exports = NumeralLabel;
+
+
+
+},{}],8:[function(require,module,exports){
+var StatsLayer;
+
+StatsLayer = cc.Layer.extend({
+  ctor: function(skin) {
+    var NumeralLabel;
+    this._super();
+    NumeralLabel = require('./numeralFont');
+    this._scoreLabel = new NumeralLabel(skin.score);
+    this._comboLabel = new NumeralLabel(skin.comboNum);
+    this._scoreLabel.x = skin.score.x;
+    this._scoreLabel.y = skin.score.y;
+    this._comboLabel.x = skin.comboNum.x;
+    this._comboLabel.y = skin.comboNum.y;
+    this.addChild(this._scoreLabel);
+    return this.addChild(this._comboLabel);
+  },
+  init: function(_noteNum, maxScore) {
+    this._noteNum = _noteNum;
+    this._score = 0;
+    this._dispScore = 0;
+    this._maxCombo = 0;
+    this._combo = 0;
+    this._pgreatNum = 0;
+    this._greatNum = 0;
+    this._goodNum = 0;
+    this._badNum = 0;
+    this._poorNum = 0;
+    this._comboPoint = 0;
+    this._pgreatIncVal = maxScore.pgreat / this._noteNum;
+    this._greatIncVal = maxScore.great / this._noteNum;
+    this._goodIncVal = maxScore.good / this._noteNum;
+    this._comboBonusFactor = maxScore.combo / (10 * (this._noteNum - 1) - 55);
+    this._incValonUpdate = maxScore.good / this._noteNum / 10;
+    this._scoreLabel.init(this._getDigits(maxScore.pgreat + maxScore.combo), 0);
+    this._comboLabel.init(4, 0);
+    return this.scheduleUpdate();
+  },
+  get: function() {
+    return {
+      score: ~~(this._score.toFixed()),
+      combo: this._maxCombo,
+      pgreat: this._pgreatNum,
+      great: this._greatNum,
+      good: this._goodNum,
+      bad: this._badNum,
+      poor: this._poorNum
+    };
+  },
+  reflect: function(judge) {
+    var ref;
+    switch (judge) {
+      case "pgreat":
+        this._score += this._pgreatIncVal;
+        this._combo++;
+        this._pgreatNum++;
+        break;
+      case "great":
+        this._score += this._greatIncVal;
+        this._combo++;
+        this._greatNum++;
+        break;
+      case "good":
+        this._score += this._goodIncVal;
+        this._combo++;
+        this._goodNum++;
+        break;
+      case "bad":
+        this._score += this._comboBonusFactor * this._comboPoint;
+        this._combo = 0;
+        this._comboPoint = 0;
+        this._badNum++;
+        break;
+    }
+    if (this._combo === this._noteNum) {
+      this._score += this._comboBonusFactor * this._comboPoint;
+      this._comboPoint = 0;
+    }
+    if ((0 < (ref = this._combo) && ref <= 10)) {
+      this._comboPoint += this._combo - 1;
+    } else if (this._combo > 10) {
+      this._comboPoint += 10;
+    }
+    if (this._combo > this._maxCombo) {
+      this._maxCombo = this._combo;
+    }
+    return this._comboLabel.reflect(this._maxCombo);
+  },
+  update: function() {
+    if (this._dispScore < ~~(this._score.toFixed())) {
+      this._dispScore += this._incValonUpdate;
+      this._dispScore = this._dispScore > ~~(this._score.toFixed()) ? ~~(this._score.toFixed()) : this._dispScore;
+      return this._scoreLabel.reflect(this._dispScore);
+    }
+  },
+  _getDigits: function(num) {
+    return Math.log(num) / Math.log(10) + 1 | 0;
+  }
+});
+
+module.exports = StatsLayer;
+
+
+
+},{"./numeralFont":7}],9:[function(require,module,exports){
 var Timer;
 
 Timer = cc.Class.extend({
@@ -236,7 +528,7 @@ module.exports = Timer;
 
 
 
-},{}],6:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var TouchSprite;
 
 TouchSprite = cc.Sprite.extend({
@@ -247,11 +539,11 @@ TouchSprite = cc.Sprite.extend({
     eventListener = cc.EventListener.create({
       event: cc.EventListener.TOUCH_ONE_BY_ONE,
       swallowTouches: true,
-      onTouchBegan: this.onTouchBegan.bind(this)
+      onTouchBegan: this._onTouchBegan.bind(this)
     });
     return cc.eventManager.addListener(eventListener, this);
   },
-  onTouchBegan: function(touch, event) {
+  _onTouchBegan: function(touch, event) {
     var locationInNode, rect, s, target;
     target = event.getCurrentTarget();
     locationInNode = target.convertToNodeSpace(touch.getLocation());
@@ -270,7 +562,7 @@ module.exports = TouchSprite;
 
 
 
-},{}],7:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 var VideoPlayer;
 
 VideoPlayer = cc.Class.extend({
@@ -320,7 +612,7 @@ module.exports = VideoPlayer;
 
 
 
-},{}],8:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var VideoTimer;
 
 VideoTimer = cc.Layer.extend({
@@ -357,4 +649,4 @@ module.exports = VideoTimer;
 
 
 
-},{"./timer":5}]},{},[1]);
+},{"./timer":9}]},{},[1]);

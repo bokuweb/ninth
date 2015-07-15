@@ -1,5 +1,5 @@
 NotesLayer = cc.Layer.extend
-  ctor : (@_skin, @_timer, @_score, @_judge) ->
+  ctor : (@_skin, @_timer, score, judge) ->
     Note = require './note'
     @_super()
     @_notes = []
@@ -7,18 +7,18 @@ NotesLayer = cc.Layer.extend
     @_batchNode = new cc.SpriteBatchNode @_skin.noteImage
     @addChild @_batchNode, 100
 
-    for v in @_score
+    for v in score
       note = new Note @_batchNode.getTexture(), {
+          key             : v.key
           timing          : v.timing
-          inAnimationTime : 0.15
-          removeTiming    : 0.2
-        }, @_timer, @_judge
+          inAnimationTime : 0.2
+          removeTiming    : 0.35
+        }, @_timer, judge
       note.x = (v.key % 3) * 105 + 58
       note.y = ~~(v.key / 3) * 105 + 58
       note.timing = v.timing
       note.setScale 0, 0
       @_notes.push note
-    return
 
   start : ->
     @scheduleUpdate()

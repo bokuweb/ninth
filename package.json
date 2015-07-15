@@ -20,6 +20,7 @@
     "gulp-mocha-phantomjs": "~0.6.1"
   },
   "dependencies": {
-    "eventemitter-light": "~0.2.2"
+    "eventemitter-light": "~0.2.2",
+    "lodash": "~3.10.0"
   }
 }
